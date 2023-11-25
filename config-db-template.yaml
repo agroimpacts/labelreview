@@ -1,0 +1,5 @@
+labeller:
+  db_host: <host-url>
+  db_password: <password>
+  db_name: <database-name>
+  db_username: <database-username>
