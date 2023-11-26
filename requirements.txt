@@ -1,0 +1,13 @@
+jupyterlab
+ipywidgets
+geopandas==0.12.2
+ipyleaflet==0.17.4
+leafmap==0.22.0
+localtileserver==0.7.2
+matplotlib==3.8.1
+numpy==1.26.0
+pandas==2.0.1
+PyYAML==6.0.1
+sqlalchemy==2.0.23
+shapely==2.0.
+traitlets==5.13.0
