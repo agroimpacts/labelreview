@@ -8,7 +8,7 @@ This repository provides the tools for creating a `docker` image that installs t
 Run the following command from a terminal prompt (if you are on Windows, we strongly recommend installing `git bash` first)
 
 ```bash
-git clone 
+git clone https://github.com/agroimpacts/labelreview.git
 ```
 
 Then change your directory into the cloned repository:
