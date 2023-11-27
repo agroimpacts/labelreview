@@ -14,7 +14,9 @@ from shapely.geometry import Polygon, box
 
 class SHWMSLayer(WMSLayer):
     """Custom class to enable subsetting of images read from SentinelHub in 
-    leafmap/ipyleaflet
+    leafmap/ipyleaflet, provided by Ziga Cernigoj of SentinelHub
+    https://forum.sentinel-hub.com/t/\
+        select-area-of-byoc-image-using-bbox-geometry-in-iypleaflet/8211/2
 
     Args:
     ----
@@ -27,26 +29,37 @@ class SHWMSLayer(WMSLayer):
     maxcc=Unicode('').tag(sync=True, o=True)
 
 class labelReview:
+    """Functionality for extracting and viewing labels and associated quality 
+    metrics from running labeller instances. 
+
+    Args:
+    -----
+    params : str
+        Name of configuration yaml file.
+
+    Methods:
+    --------
+    database_engine : Establish a database connnection engine using sqlalchemy
+    get_data : Get data using a query from the postgres data, returning either 
+        a pandas DataFrame or geopandas GeoDataFrame
+    points_to_gridpoly : Converts a point to polygon using a given radius
+    get_labels : Extract labels for a particular labeller and site (defaults to
+        random selection of one site from all completed sites)
+    set_wms_url : Create the URL needed to make a WMS request to SentinelHub
+    plot_labels : Form a leafmap to display labels over SentinelHub imagery
+    """
+
+
     def __init__(self, config):
         
         with open(config, 'r') as yaml_file:
             self.params = yaml.load(yaml_file, Loader=yaml.FullLoader)
                             
-        # self.db_username = self.params['labeller']['db_username']
-        # self.db_host = self.params['labeller']['db_host']
-        # self.db_password=self.params['labeller']['db_password']
-        # self.db_name=self.params['labeller']['db_name']
-
         self.db_engine = self.database_engine()
-        # print(self.db_engine)
 
         query = "SELECT key, value FROM configuration WHERE key"\
             " LIKE 'instance%%'"
-        # print(self.query)
         self.tbl_config = self.get_data(query=query)   
-
-    def __del__(self):
-        self.close()
 
     def database_engine(self):
         connection_url = sa.URL.create(
@@ -60,7 +73,6 @@ class labelReview:
         return engine
     
     def get_data(self, query, method="pd"):
-        # print(query)
         with self.db_engine.connect() as conn, conn.begin():
             if method=="pd":
                 data = pd.read_sql(query, conn)
@@ -110,7 +122,7 @@ class labelReview:
     def row_to_list(self, df_row):
         return df_row.iloc[0].to_list()
 
-    def set_wms_url(self, labels):#, bbox, color="TRUE-COLOR"):
+    def set_wms_url(self, labels):
         instance = self.tbl_config.query("key.str.contains(@labels['type'])")\
             .value.loc[0]
         url = f"https://services.sentinel-hub.com/ogc/wms/{instance}"
