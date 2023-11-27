@@ -32,6 +32,8 @@ cd /path/you/cloned/repository/into/labelreview
     docker run -it -p 8888:8888 -v </path/you/cloned/repository/into/labelreview>:/home/workdir agroimpacts/labelreview 
     ```
 
+    Note that this connects the directory you cloned the repo into it to the directory in the running docker container. That means that changes in the docker container will get picked up in the labelreview directory, and vice versa, so work you do in the container will be saved when the container is removed. 
+
 4. Then copy and paste into your browser address bar the line with the URL and token in it that looks like this:
 
     ```bash
@@ -39,3 +41,32 @@ cd /path/you/cloned/repository/into/labelreview
     ```
 
    That will launch a jupyter lab session, and then you can open the `review_labellers.ipynb` notebook. 
+
+5. To run the notebook, you will need to make a copy of `config-db-template.yaml`, which you can call `config-db.yaml`. Copy the credentials shared with you into that file. 
+
+6. Run the notebook
+
+7. When you are finished, you can stop the stop the container, using:
+
+    ```bash
+    docker ps -a
+    ```
+
+    That will list the containers. Copy the container id and then run:
+
+    ```bash
+    docker stop <container id>
+    ```
+
+    You can also remove the container, which you probably should do after re-running several times:
+
+    ```bash
+    docker rm <container id>
+    ```
+
+8. Run it again:
+
+    ```bash
+    docker run -it -p 8888:8888 -v </path/you/cloned/repository/into/labelreview>:/home/workdir agroimpacts/labelreview 
+    ```
+
