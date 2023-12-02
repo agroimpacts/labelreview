@@ -133,16 +133,19 @@ class labelReview:
         
         if name=="random":
             reviewed = pd.read_csv(review_file) if os.path.exists(review_file) \
-                else []
-            reviewed_names = reviewed.query("labeller.astype('str')==@id")\
-                .name.to_list()
-            assignments_filtered = assignments\
-                .query("worker_id==@id & ~name.isin(@reviewed_names)")\
-                .reset_index(drop=True)
+                else None
+            
+            if isinstance(reviewed, pd.DataFrame):
+                reviewed_names = reviewed.query("labeller.astype('str')==@id")\
+                    .name.to_list()
+                assignments = assignments\
+                    .query("worker_id==@id & ~name.isin(@reviewed_names)")\
+                    .reset_index(drop=True)
 
-            site = assignments_filtered\
+            site = assignments\
                 .query("worker_id == @id & kml_type == @type")\
                 .sample(n=1)
+            
         else: 
             site = assignments.query("worker_id == @id & name == @name")
 
@@ -328,7 +331,7 @@ class labelReview:
         outdata = pd.DataFrame(outlist)
         
         if expert_labels:
-            expert = input(f"What is your rating/feedback for the"\
+            expert = input(f"What is your rating/feedback for the "\
                            f"corresponding expert labels for {sample}?: ")
             outdata.loc[len(outdata)] = [sample, "expert", expert]
 
