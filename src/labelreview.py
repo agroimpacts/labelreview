@@ -1,14 +1,15 @@
 import pandas as pd
 import geopandas as gpd
+import rasterio
+import numpy as np
 import leafmap.leafmap as leafmap
+import localtileserver
 from ipyleaflet import WMSLayer, projections
 from traitlets import Unicode
-import localtileserver
 import psycopg
 import yaml
 import os
 from pathlib import Path
-import pandas.io.sql as sqlio
 import sqlalchemy as sa
 from shapely.geometry import Polygon, box
 
@@ -30,12 +31,17 @@ class SHWMSLayer(WMSLayer):
 
 class labelReview:
     """Functionality for extracting and viewing labels and associated quality 
-    metrics from running labeller instances. 
+    metrics drawn from a) a running labeller instances, or b) local label files.
+    Imagery that labels are compared against can be drawn from SentinelHub or
+    from locally stored image tiles. 
 
     Args:
     -----
     params : str
         Name of configuration yaml file.
+    connection_type : str
+        "database" if connecting to labeller instance, or "local" if working 
+        with local files
 
     Methods:
     --------
@@ -50,18 +56,24 @@ class labelReview:
     """
 
 
-    def __init__(self, config):
+    def __init__(self, config, connection_type="database"):
         
         with open(config, 'r') as yaml_file:
             self.params = yaml.load(yaml_file, Loader=yaml.FullLoader)
-                            
-        self.db_engine = self.database_engine()
+        
+        if connection_type == "database":
+            self.db_engine = self.database_engine()
 
-        query = "SELECT key, value FROM configuration WHERE key"\
-            " LIKE 'instance%%'"
-        self.tbl_config = self.get_data(query=query)   
+            query = "SELECT key, value FROM configuration WHERE key"\
+                " LIKE 'instance%%'"
+            self.tbl_config = self.get_data(query=query)   
+        
+        elif connection_type == "local": 
+            print("Working locally")
 
     def database_engine(self):
+        """Create a postgresql database engine"""
+
         connection_url = sa.URL.create(
             "postgresql+psycopg",
             username=self.params['labeller']['db_username'],
@@ -88,9 +100,48 @@ class labelReview:
         points_gdf = gpd.GeoDataFrame(points, crs=crs)
         return points_gdf
 
-    def get_labels(self, assignments, id, type="Q", name="random"):
+    def get_labels(self, assignments, id, type="Q", name="random", 
+                   review_file="label_reviews.csv"):
+        """Get labels for a particular labeller from a set of labelling 
+        assignments
+
+        Parameters
+        ----------
+        assignments : DataFrame
+            Containing assignment data information from labeling tasks
+        id : str
+            ID of labeller whose work you want to review
+        type : str
+            What kind of assignment (specify with appropriate code, e.g. "Q" or 
+            "F")
+        name : str
+            A specific site name, otherwise defaults to "random", in which case 
+            a random site will be chosen. 
+        review_file : str
+            Path to file containing at a minimum the name of sites and the id 
+            of the labeller who labelled it. When name is set to "random", this
+            file, if it exists, will be read and any the names of any sites 
+            that have been reviewed will be excluded from the random draw. 
+        
+        Returns
+        -------
+        A dictionary with the labeller id, the type of assignment, the point 
+        representing the site center, a polygon of the sampling grid, one to 
+        limit the scope of the call from SentinelHub, and labels from the 
+        labeller and the expert, if each are available.
+        """
+        
         if name=="random":
-            site = assignments.query("worker_id == @id & kml_type == @type")\
+            reviewed = pd.read_csv(review_file) if os.path.exists(review_file) \
+                else []
+            reviewed_names = reviewed.query("labeller.astype('str')==@id")\
+                .name.to_list()
+            assignments_filtered = assignments\
+                .query("worker_id==@id & ~name.isin(@reviewed_names)")\
+                .reset_index(drop=True)
+
+            site = assignments_filtered\
+                .query("worker_id == @id & kml_type == @type")\
                 .sample(n=1)
         else: 
             site = assignments.query("worker_id == @id & name == @name")
@@ -106,7 +157,7 @@ class labelReview:
         point = self.get_data(query=queries[0])
 
         w1 = 0.005 / 2
-        w2 = (0.005 / 2)*2.56
+        w2 = (0.005 / 2) * 2.56
         poly = self.points_to_gridpoly(points=point, w=w1)
         poly_img = self.points_to_gridpoly(points=point, w=w2)
         
@@ -116,11 +167,8 @@ class labelReview:
         else: 
             q_flds = None
 
-        return {"type": type, "point": point, "poly": poly, 
+        return {"id": id, "type": type, "point": point, "poly": poly, 
                 "poly_img": poly_img, "user": user_flds, "expert": q_flds}
-
-    def row_to_list(self, df_row):
-        return df_row.iloc[0].to_list()
 
     def set_wms_url(self, labels):
         instance = self.tbl_config.query("key.str.contains(@labels['type'])")\
@@ -128,37 +176,163 @@ class labelReview:
         url = f"https://services.sentinel-hub.com/ogc/wms/{instance}"
         return url
 
-    def plot_labels(self, labels):
+    def min_max(self, tile, bands, clip=None):
+        """Calculate the min and max value for a locally stored image, with the 
+        option to clip based on percentiles
+
+        Parameters
+        ----------
+        tile : str
+            File path to image
+        bands : tuple
+            Bands from which to calculate min and max 
+        clip : int
+            An integer, e.g. 1, specifying the lower tail percentile to clip
+
+        Returns
+        -------
+        A list of min and list of max values
+
+        """
+        assert type(bands) is tuple, "Provide bands as tuple"
+        
+        with rasterio.open(tile) as src:
+            values = src.read(bands)
+        
+        mins = []
+        maxs = []
+        
+        for i in range(values.shape[0]):
+            if clip:
+                mins.append(np.nanpercentile(values[i], clip))
+                maxs.append(np.nanpercentile(values[i], 100-clip))
+            else: 
+                mins.append(np.nanmin(values[i]))
+                maxs.append(np.nanmax(values[i]))
+        
+        return mins, maxs
+
+    def plot_labels(self, labels, tile=None, stretch=False):
+        """Record a review after assessing a labeller's work
+
+        Parameters
+        ----------
+        labels : list
+            List containing output GeoDataFrames and associated id information
+        tile : str
+            String containing path to local geotiff tile to display.  Defaults 
+            to None, in which case a WMS call be made to SentinelHub to look for 
+            imagery
+        stretch : bool
+            Whether or not to apply a stretch to the local geotiff. If True, 
+            a min-max stretch is applied between the 1st and 99th percentile 
+            image values
+
+        Returns
+        -------
+        A leafmap displaying the labels over the imagery on which they were 
+        digitized
+
+        Notes
+        -----
+        For local tiles, this is currently hard-coded to process 4-band images.   
+        """
+
+
         bb = list(labels['poly_img'].bounds.loc[0])
         d = labels["point"].date[0]
         url = self.set_wms_url(labels)
 
-        sh_wms = []
-        for layer in ["TRUE-COLOR", "FALSE-COLOR"]:
-            sh_wms.append(
-                SHWMSLayer(
-                    url=url,
-                    layers=layer,
-                    format='image/png',
-                    transparent=True,
-                    geometry=str(labels['poly_img'].geometry.loc[0]),
-                    time=f"{d}/{d}",
-                    crs=projections.EPSG4326,
-                    maxcc="100",
-                    name=layer
-                )
-            )
-            
         m = leafmap.Map(zoom=16, 
-            center=self.row_to_list(labels["point"][["y", "x"]])
+            center=labels["point"][["y", "x"]].iloc[0].to_list()
         )
         m.add_basemap("SATELLITE")
-        m.add_gdf(labels["poly"], style={"color": "white"}, 
+        m.add_tile_layer(
+            url='https://server.arcgisonline.com/ArcGIS/rest/services/' +\
+                'World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            name="ESRI",
+            attribution="ESRI"
+        )
+
+        m.add_gdf(labels["poly"], style={"color": "white", "fillOpacity": 0.0}, 
                   layer_name=labels["point"].name[0])
         m.add_gdf(labels["user"], style={"color": "red"}, 
             layer_name="User labels"
         )
         m.add_gdf(labels["expert"], layer_name="Expert labels")
-        m.add_layer(sh_wms[0])
-        m.add_layer(sh_wms[1])
+
+        # Tile layers
+        if not tile:  # SentinelHub
+            print("Loading from SHUB")
+            sh_wms = []
+            for layer in ["TRUE-COLOR", "FALSE-COLOR"]:
+                sh_wms.append(
+                    SHWMSLayer(
+                        url=url,
+                        layers=layer,
+                        format='image/png',
+                        transparent=True,
+                        geometry=str(labels['poly_img'].geometry.loc[0]),
+                        time=f"{d}/{d}",
+                        crs=projections.EPSG4326,
+                        maxcc="100",
+                        name=layer
+                    )
+                )
+            
+            m.add_layer(sh_wms[0])
+            m.add_layer(sh_wms[1])
+
+        else: # Local tiles
+            print("Local tiles")
+            assert os.path.exists(tile), "{tile} does not exist"
+            if stretch:
+                mins, maxs = self.min_max(self, tile, (1,2,3,4), clip=1)
+            else: 
+                mins, maxs = None
+
+            m.add_raster(tile, bands=[1,2,3], layer_name='TRUE COLOR', 
+                         vmin=mins, vmax=maxs)
+            m.add_raster(tile, bands=[2,3,4], layer_name='FALSE COLOR', 
+                         vmin=mins, vmax=maxs)
+
         return m
+    
+    def record_review(self, sample, id, review_file="label_reviews.csv", 
+                      expert_labels=True):
+        """Record a review after assessing a labeller's work
+
+        Args:
+        -----
+        sample : str
+            Name of sample site that was just reviewed
+        id : str
+            ID (as string) of labeller being assessed
+        review_file : str
+            Name of output csv to capture the reviewed sites. Defaults to 
+            "label_reviews.csv" in current directory
+        expert_labels : bool
+            If True (default) then a second prompt will ask whether there is 
+            feedback to give on a set of expert labels associated with the same
+            site. 
+
+        Returns:
+        --------
+        Review of labels (and any expert labels) added to DataFrame recorded to 
+        csv
+        """
+
+        labeller = input(f"What is your rating/feedback for labeller {id} on "\
+                         f"{sample}?: ")
+        outlist = {"name": [sample], "labeller": [id], "rating": [labeller]}
+        outdata = pd.DataFrame(outlist)
+        
+        if expert_labels:
+            expert = input(f"What is your rating/feedback for the"\
+                           f"corresponding expert labels for {sample}?: ")
+            outdata.loc[len(outdata)] = [sample, "expert", expert]
+
+        return outdata.to_csv(
+            review_file, mode="a", header=not os.path.exists(review_file), 
+            index=False
+        )

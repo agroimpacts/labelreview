@@ -29,8 +29,25 @@ cd /path/you/cloned/repository/into/labelreview
 3. After that installs, run the image:
 
     ```bash
-    repo_path=/path/you/cloned/repository/into/labelreview  # replace with your own path to the repo
-    docker run -it -p 8888:8888 -v $repo_path:/home/workdir agroimpacts/labelreview 
+    docker run -it -p 8888:8888 -v $(pwd):/home/workdir agroimpacts/labelreview
+    ```
+
+    For Windows-based use (thanks to this [post](https://stackoverflow.com/questions/41485217/mount-current-directory-as-a-volume-in-docker-on-windows-10)) for answers) if you are running the container from a Git Bash terminal emulator, the command will be:
+
+    ```bash
+    winpty docker run -it -v "/$(pwd -W):/home/workdir" agroimpacts/labelreview
+    ```
+
+    From Windows command line:
+
+    ```bash
+    docker run -it -v %cd%:/home/workdir agroimpacts/labelreview
+    ```
+
+    And from Powershell:
+
+    ```bash
+            docker run -it -v ${PWD}:/home/workdir agroimpacts/labelreview
     ```
 
     Note that this connects the directory you cloned the repo into it to the directory in the running docker container. That means that changes in the docker container will get picked up in the labelreview directory, and vice versa, so work you do in the container will be saved when the container is removed. 
