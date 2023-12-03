@@ -85,6 +85,20 @@ class labelReview:
         return engine
     
     def get_data(self, query, method="pd"):
+        """Query data from labeller database
+
+        Parameters
+        ----------
+        query : str
+            A postgresql query string
+        method : str
+            Either pd (pandas) to read into a non-spatial table, or gpd (for 
+            one of the spatial tables)
+
+        Returns
+        -------
+        A DataFrame or GeoDataFrame
+        """    
         with self.db_engine.connect() as conn, conn.begin():
             if method=="pd":
                 data = pd.read_sql(query, conn)

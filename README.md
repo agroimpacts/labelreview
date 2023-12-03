@@ -85,7 +85,7 @@ cd /path/you/cloned/repository/into/labelreview
 8. Run it again:
 
     ```bash
-    docker run -it -p 8888:8888 -v $repo_path:/home/workdir agroimpacts/labelreview 
+    docker run -it -p 8888:8888 -v $(pwd):/home/workdir agroimpacts/labelreview 
     ```
 
 For other helpful resources on using docker, please see [here](https://hamedalemo.github.io/advanced-geo-python/lectures/docker.html#what-is-docker).
