@@ -184,12 +184,17 @@ class labelReview:
         else: 
             q_flds = None
 
-        return {"id": id, "type": type, "point": point, "poly": poly, 
-                "poly_img": poly_img, "user": user_flds, "expert": q_flds}
+        return {
+            "id": id, "type": type, "point": point, "poly": poly, 
+            "poly_img": poly_img, 
+            "user": user_flds if len(user_flds) > 0 else None, 
+            "expert": q_flds if isinstance(q_flds, pd.DataFrame) \
+                and len(q_flds) > 0 else None
+        }
 
     def set_wms_url(self, labels):
         instance = self.tbl_config.query("key.str.contains(@labels['type'])")\
-            .value.loc[0]
+            .value.iloc[0]
         url = f"https://services.sentinel-hub.com/ogc/wms/{instance}"
         return url
 
@@ -271,12 +276,14 @@ class labelReview:
             attribution="ESRI"
         )
 
+        # target box and labeler and expert labels (if present)
         m.add_gdf(labels["poly"], style={"color": "white", "fillOpacity": 0.0}, 
                   layer_name=labels["point"].name[0])
-        m.add_gdf(labels["user"], style={"color": "red"}, 
-            layer_name="User labels"
-        )
-        m.add_gdf(labels["expert"], layer_name="Expert labels")
+        if isinstance(labels["user"], pd.DataFrame):
+            m.add_gdf(labels["user"], style={"color": "red"}, 
+                      layer_name="User labels")
+        if isinstance(labels["expert"], pd.DataFrame):
+            m.add_gdf(labels["expert"], layer_name="Expert labels")
 
         # Tile layers
         if not tile:  # SentinelHub
