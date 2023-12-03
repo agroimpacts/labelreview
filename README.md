@@ -47,7 +47,7 @@ cd /path/you/cloned/repository/into/labelreview
     And from Powershell:
 
     ```bash
-            docker run -it -v ${PWD}:/home/workdir agroimpacts/labelreview
+    docker run -it -v ${PWD}:/home/workdir agroimpacts/labelreview
     ```
 
     Note that this connects the directory you cloned the repo into it to the directory in the running docker container. That means that changes in the docker container will get picked up in the labelreview directory, and vice versa, so work you do in the container will be saved when the container is removed. 
