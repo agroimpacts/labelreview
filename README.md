@@ -89,3 +89,7 @@ cd /path/you/cloned/repository/into/labelreview
     ```
 
 For other helpful resources on using docker, please see [here](https://hamedalemo.github.io/advanced-geo-python/lectures/docker.html#what-is-docker).
+
+## Review labels
+
+Once the container is running and you have launched `jupyter lab`, open up and worth through [review_labellers.ipynb](review_labellers.ipynb). 
