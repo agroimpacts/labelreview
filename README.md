@@ -2,8 +2,7 @@
 
 Tools for tracking progress and reviewing the results of labelling work done on a [`labeller`](https://github.com/agroimpacts/labeller) instance, including checks of individual labeller's work against imagery. Tools for creating a `docker` image that installs the necessary packages for launching a `jupyter` notebook (in `jupyter lab`) are provided, including instructions for running a `docker` container locally, as well as instructions for converting the image for use with `singularity` so that it can be used in an HPC environment. 
 
-## Local use
-### Clone this repository
+## Clone this repository
 
 Run the following command from a terminal prompt (if you are on Windows, we strongly recommend installing `git bash` first). 
 
@@ -17,7 +16,7 @@ Then change your directory into the cloned repository:
 cd /path/you/cloned/repository/into/labelreview
 ```
 
-### Setup docker image
+## Setup docker image
 
 1. Install [`docker`](https://docs.docker.com/get-docker/) on your computer
 
@@ -29,67 +28,67 @@ cd /path/you/cloned/repository/into/labelreview
 
     Note: replace "agroimpacts" with your user profile on docker hub (see next section).
 
-3. After that installs, run the image:
+### Run it locally
+After that installs, run the image:
 
-    ```bash
-    docker run -it -p 8888:8888 -v $(pwd):/home/workdir agroimpacts/labelreview
-    ```
+```bash
+docker run -it -p 8888:8888 -v $(pwd):/home/workdir agroimpacts/labelreview
+```
 
-    For Windows-based use (thanks to this [post](https://stackoverflow.com/questions/41485217/mount-current-directory-as-a-volume-in-docker-on-windows-10)) for answers) if you are running the container from a Git Bash terminal emulator, the command will be:
+For Windows-based use (thanks to this [post](https://stackoverflow.com/questions/41485217/mount-current-directory-as-a-volume-in-docker-on-windows-10)) for answers) if you are running the container from a Git Bash terminal emulator, the command will be:
 
-    ```bash
-    winpty docker run -it -v "/$(pwd -W):/home/workdir" agroimpacts/labelreview
-    ```
+```bash
+winpty docker run -it -v "/$(pwd -W):/home/workdir" agroimpacts/labelreview
+```
 
-    From Windows command line:
+From Windows command line:
 
-    ```bash
-    docker run -it -v %cd%:/home/workdir agroimpacts/labelreview
-    ```
+```bash
+docker run -it -v %cd%:/home/workdir agroimpacts/labelreview
+```
 
-    And from Powershell:
+And from Powershell:
 
-    ```bash
-    docker run -it -v ${PWD}:/home/workdir agroimpacts/labelreview
-    ```
+```bash
+docker run -it -v ${PWD}:/home/workdir agroimpacts/labelreview
+```
 
-    Note that this connects the directory you cloned the repo into it to the directory in the running docker container. That means that changes in the docker container will get picked up in the labelreview directory, and vice versa, so work you do in the container will be saved when the container is removed. 
+Note that this connects the directory you cloned the repo into it to the directory in the running docker container. That means that changes in the docker container will get picked up in the labelreview directory, and vice versa, so work you do in the container will be saved when the container is removed. 
 
 4. Then copy and paste into your browser address bar the line with the URL and token in it that looks like this:
 
-    ```bash
-    http://127.0.0.1:8888/lab?token=<a long token hash>
-    ```
+```bash
+http://127.0.0.1:8888/lab?token=<a long token hash>
+```
 
-   That will launch a jupyter lab session, and then you can open the `review_labellers.ipynb` notebook. 
+That will launch a jupyter lab session, and then you can open the `review_labellers.ipynb` notebook. 
 
 5. To run the notebook, you will need to make a copy of `config-db-template.yaml`, which you can call `config-db.yaml`. Copy the credentials shared with you into that file. 
 
-6. Run the notebook
+### Use the notebook
+When you are finished, you can stop the stop the container, using:
 
-7. When you are finished, you can stop the stop the container, using:
+```bash
+docker ps -a
+```
 
-    ```bash
-    docker ps -a
-    ```
+That will list the containers. Copy the container id and then run:
 
-    That will list the containers. Copy the container id and then run:
+```bash
+docker stop <container id>
+```
 
-    ```bash
-    docker stop <container id>
-    ```
+You can also remove the container, which you probably should do after re-running several times:
 
-    You can also remove the container, which you probably should do after re-running several times:
+```bash
+docker rm <container id>
+```
 
-    ```bash
-    docker rm <container id>
-    ```
+If you want to run it again, simply:
 
-8. Run it again:
-
-    ```bash
-    docker run -it -p 8888:8888 -v $(pwd):/home/workdir agroimpacts/labelreview 
-    ```
+```bash
+docker run -it -p 8888:8888 -v $(pwd):/home/workdir agroimpacts/labelreview 
+```
 
 For other helpful resources on using docker, please see [here](https://hamedalemo.github.io/advanced-geo-python/lectures/docker.html#what-is-docker).
 
@@ -118,7 +117,7 @@ To run on the HPC, do the following:
     ssh <your cluster user name>@hpc.clarku.edu
     ```
 
-3. Make sure you clone this repo into your cluster home directory
+3. Make sure you clone this repo into your cluster home directory:
 
     ```bash
     git clone https://github.com/agroimpacts/labelreview.git
