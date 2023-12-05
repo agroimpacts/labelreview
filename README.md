@@ -145,7 +145,7 @@ To run on the HPC, do the following:
         --pty bash
     ```
 
-    Here <PART> should be replaced with the name of the cluster partition you want to run on, <CPUS> with the number of CPUs you want to run on (1 is fine for this application), <GPUS> is the name and number of the GPUs you want to run with (we don't need one here, so gpu:0 is the best entry), and <TIME> is the number of hours you want your job to run, specified as HR:MM:SS, or 01:00:00 for one hour. 
+    Here `<PART>` should be replaced with the name of the cluster partition you want to run on, `<CPUS>` with the number of CPUs you want to run on (1 is fine for this application), `<GPUS>` is the name and number of the GPUs you want to run with (we don't need one here, so gpu:0 is the best entry), and `<TIME>` is the number of hours you want your job to run, specified as HR:MM:SS, or 01:00:00 for one hour. 
 
 6. Once that is running, from within your cluster `labelreview` folder (which is where the singularity image should be), run the session:
 
