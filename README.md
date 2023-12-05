@@ -28,7 +28,7 @@ cd /path/you/cloned/repository/into/labelreview
 
     Note: replace "agroimpacts" with your user profile on docker hub (see next section).
 
-### Run it locally
+## Run locally
 After that installs, run the image:
 
 ```bash
@@ -55,7 +55,7 @@ docker run -it -v ${PWD}:/home/workdir agroimpacts/labelreview
 
 Note that this connects the directory you cloned the repo into it to the directory in the running docker container. That means that changes in the docker container will get picked up in the labelreview directory, and vice versa, so work you do in the container will be saved when the container is removed. 
 
-4. Then copy and paste into your browser address bar the line with the URL and token in it that looks like this:
+Then copy and paste into your browser address bar the line with the URL and token in it that looks like this:
 
 ```bash
 http://127.0.0.1:8888/lab?token=<a long token hash>
@@ -63,10 +63,9 @@ http://127.0.0.1:8888/lab?token=<a long token hash>
 
 That will launch a jupyter lab session, and then you can open the `review_labellers.ipynb` notebook. 
 
-5. To run the notebook, you will need to make a copy of `config-db-template.yaml`, which you can call `config-db.yaml`. Copy the credentials shared with you into that file. 
+To run the notebook, you will need to make a copy of `config-db-template.yaml`, which you can call `config-db.yaml`. Copy the credentials shared with you into that file. 
 
-### Use the notebook
-When you are finished, you can stop the stop the container, using:
+Work with the notebook. When you are finished, you can stop the stop the container, using:
 
 ```bash
 docker ps -a
@@ -92,7 +91,7 @@ docker run -it -p 8888:8888 -v $(pwd):/home/workdir agroimpacts/labelreview
 
 For other helpful resources on using docker, please see [here](https://hamedalemo.github.io/advanced-geo-python/lectures/docker.html#what-is-docker).
 
-### Running on an HPC
+## Running on an HPC
 These instructions were developed by @Rahebe22 for running on Clark University's HPC, but should translate to similar systems. 
 
 To run on the HPC, do the following: 
