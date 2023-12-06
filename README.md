@@ -156,7 +156,6 @@ To run on the HPC, do the following:
     ```
     http://127.0.0.1:8888/lab
     ```
-
     or 
 
     ```bash
@@ -175,4 +174,47 @@ To run on the HPC, do the following:
 
 ## Review labels
 
-Once the container is running and you have launched `jupyter lab`, open up and worth through [review_labellers.ipynb](review_labellers.ipynb). 
+Once the container is running and you have launched `jupyter lab`, open up and work through [review_labellers.ipynb](review_labellers.ipynb). 
+
+When reviewing labels, assess them against the following definitions: 
+
+- True positive (TP): A field that is correctly labelled as such
+- True negative (TN): A non-field area that is correctly left unlabelled
+- False negative (FN): An actual field that should have been mapped, but wasn't
+- False positive (FP): A non-field area that was incorrectly mapped as a field
+- Over-segmented (OS): A larger field that was incorrectly divided into many small fields (in these cases, the labeller is making up internal boundaries in the larger field that are not visible in the imagery)
+- Under-segmented (US): Two or more smaller fields that were incorrectly grouped into one larger field, even though boundaries are visible that would enable the smaller fields to be correctly digitized.  
+
+Using those definitions, for sites where the imagery shows that there are fields in the imagery, assign one of the following categories to each reviewed site:
+
+    - 0, for cases where the labeller maps less than half the site correctly, either by: 
+        a. leaving 50% or more of the area covered by actual fields unlabelled (FN);
+        b. incorrectly mapping more than twice the area of fields that are actually there (FP);
+        c. correctly mapping the total area covered by fields, but grouping them into a larger field or fields that sum to less than half the total number of fields in the imagery (US); 
+        d. correctly mapping the total areas covered by fields, but falsely dividing them into more than twice the number of individual fields that are actually there (OS);
+
+    - 1, for cases where the labeller maps 50-70% of the site correctly, either by:
+        a. leaving 30-50% of the area covered by actual fields unlabelled (FN);
+        b. incorrectly labelling an areas that is 50 to 100% larger than the area of actual fields (FP);
+        c. correctly mapping the total area covered by fields, but grouping them such that there are only 50-70% of the total number of fields in the imagery (US); 
+        d. correctly mapping the total areas covered by fields, but falsely dividing them into 50 to 100% more fields than are actually there (OS);
+
+    - 2, for cases where the labeller maps 70-90% of the site correctly, either by:
+        a. leaving 10-30% of the area covered by actual fields unlabelled (FN);
+        b. incorrectly labelling an areas that is 10 to 50% larger than the area of actual fields (FP);
+        c. correctly mapping the total area covered by fields, but grouping them such that there are only 70-90% of the total number of fields in the imagery (US); 
+        d. correctly mapping the total areas covered by fields, but falsely dividing them into 10 to 50% more fields than are actually there (OS);
+
+    - 3, for cases where the labeller maps 90+% of the site correctly, such that:
+        a. <10% of the area covered by actual fields is left unlabelled (FN);
+        b. The labeled field areas is <10% larger than the actual field area (FP);
+        c. the total number of correctly labelled fields is <10% smaller than the total number of actual fields (US); 
+        d. the total number of correctly labelled fields is <10% larger than the total number of actual fields (OS);
+
+For sites where then are no fields visible in the imagery, and the labeller correctly classifies them as having no fields, assign a value of 4.
+
+When entering your review in the review dialog prompt, enter the review number followed by a comma and then any explanatory notes to support your rating. The more detail the better, e.g. 
+
+1, the labeller missed an area of fields in the lower left of the time nearly twice as large as the area of fields that were labelled.
+
+
