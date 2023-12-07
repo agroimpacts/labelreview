@@ -307,6 +307,12 @@ class labelReview:
             m.add_layer(sh_wms[0])
             m.add_layer(sh_wms[1])
 
+            url = f"https://{self.params['labeller']['db_host']}"\
+                f"/api/getkml?kmlName={labels['poly']['name'][0]}"\
+                f"&workerId={labels['id']}"
+            
+            print(url)
+
         else: # Local tiles
             print("Local tiles")
             assert os.path.exists(tile), "{tile} does not exist"
@@ -319,7 +325,7 @@ class labelReview:
                          vmin=mins, vmax=maxs)
             m.add_raster(tile, bands=[2,3,4], layer_name='FALSE COLOR', 
                          vmin=mins, vmax=maxs)
-
+            
         return m
     
     def record_review(self, sample, id, review_file="label_reviews.csv", 

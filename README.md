@@ -215,6 +215,6 @@ For sites where then are no fields visible in the imagery, and the labeller corr
 
 When entering your review in the review dialog prompt, enter the review number followed by a comma and then any explanatory notes to support your rating. The more detail the better, e.g. 
 
-1, the labeller missed an area of fields in the lower left of the time nearly twice as large as the area of fields that were labelled.
+> 1, the labeller missed an area of fields in the lower left of the time nearly twice as large as the area of fields that were labelled.
 
 
